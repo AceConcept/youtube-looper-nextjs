@@ -19,60 +19,91 @@ export default function Home() {
   const [isLooping, setIsLooping] = useState(false)
   const [currentTime, setCurrentTime] = useState('0:00')
   const [duration, setDuration] = useState('0:00')
+  const [isApiReady, setIsApiReady] = useState(false)
   
   const playerRef = useRef<any>(null)
   const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const playerContainerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     loadYouTubeAPI()
   }, [])
 
   const loadYouTubeAPI = () => {
-    if (window.YT) {
-      createPlayer()
+    // Check if API is already loaded
+    if (window.YT && window.YT.Player) {
+      setIsApiReady(true)
       return
     }
 
+    // Set up the callback for when API is ready
     window.onYouTubeIframeAPIReady = () => {
-      createPlayer()
+      setIsApiReady(true)
+      console.log('YouTube API is ready')
     }
 
+    // Load the YouTube IFrame API
     const tag = document.createElement('script')
     tag.src = 'https://www.youtube.com/iframe_api'
+    tag.async = true
     const firstScriptTag = document.getElementsByTagName('script')[0]
     firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag)
   }
 
-  const createPlayer = () => {
-    playerRef.current = new window.YT.Player('player', {
+  const createPlayer = (videoId: string) => {
+    if (!window.YT || !playerContainerRef.current) {
+      console.error('YouTube API not ready or container not found')
+      return
+    }
+
+    // Clear any existing player
+    if (playerRef.current) {
+      playerRef.current.destroy()
+    }
+
+    // Clear the container
+    if (playerContainerRef.current) {
+      playerContainerRef.current.innerHTML = ''
+    }
+
+    // Create new player
+    playerRef.current = new window.YT.Player(playerContainerRef.current, {
       height: '400',
       width: '100%',
-      videoId: '',
+      videoId: videoId,
       playerVars: {
         'playsinline': 1,
         'controls': 1,
         'rel': 0,
-        'modestbranding': 1
+        'modestbranding': 1,
+        'showinfo': 0
       },
       events: {
         'onReady': onPlayerReady,
-        'onStateChange': onPlayerStateChange
+        'onStateChange': onPlayerStateChange,
+        'onError': onPlayerError
       }
     })
   }
 
-  const onPlayerReady = () => {
+  const onPlayerReady = (event: any) => {
     console.log('YouTube player is ready')
     updateDuration()
     startTimeUpdate()
   }
 
   const onPlayerStateChange = (event: any) => {
+    console.log('Player state changed:', event.data)
     if (event.data === window.YT.PlayerState.ENDED) {
       if (isLooping) {
         restartLoop()
       }
     }
+  }
+
+  const onPlayerError = (event: any) => {
+    console.error('YouTube player error:', event.data)
+    showNotification('Error loading video. Please check the URL.', 'error')
   }
 
   const extractVideoId = (url: string) => {
@@ -93,12 +124,16 @@ export default function Home() {
       return
     }
 
+    if (!isApiReady) {
+      showNotification('YouTube API is still loading. Please wait a moment and try again.', 'error')
+      return
+    }
+
     setVideoId(id)
     setShowVideo(true)
     
-    if (playerRef.current && playerRef.current.loadVideoById) {
-      playerRef.current.loadVideoById(id)
-    }
+    // Create the player with the video ID
+    createPlayer(id)
     
     showNotification('Video loaded successfully!', 'success')
   }
@@ -171,7 +206,6 @@ export default function Home() {
   }
 
   const showNotification = (message: string, type: 'success' | 'error') => {
-    // Simple notification - you could enhance this with a toast library
     console.log(`${type.toUpperCase()}: ${message}`)
   }
 
@@ -202,8 +236,12 @@ export default function Home() {
                 onChange={(e) => setVideoUrl(e.target.value)}
                 onKeyPress={handleKeyPress}
               />
-              <button onClick={loadVideo} className="btn btn-primary">
-                Load Video
+              <button 
+                onClick={loadVideo} 
+                className="btn btn-primary"
+                disabled={!isApiReady}
+              >
+                {isApiReady ? 'Load Video' : 'Loading API...'}
               </button>
             </div>
           </div>
@@ -213,7 +251,7 @@ export default function Home() {
         {showVideo && (
           <div className="video-section">
             <div className="video-container">
-              <div id="player"></div>
+              <div ref={playerContainerRef} id="player"></div>
             </div>
 
             {/* Loop Controls */}
