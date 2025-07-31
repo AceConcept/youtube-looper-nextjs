@@ -2,27 +2,37 @@
   "name": "youtube-video-looper",
   "version": "1.0.0",
   "description": "A modern web application for looping YouTube video sections with precise control and repetition tracking",
-  "main": "server.js",
+  "private": true,
   "scripts": {
-    "dev": "node dev-server.js",
-    "start": "node server.js",
-    "build": "echo 'No build step required for this application'",
-    "vercel-build": "echo 'Build completed'"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
   },
   "keywords": [
     "youtube",
     "video",
     "loop",
     "player",
-    "web-app"
+    "web-app",
+    "nextjs"
   ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2"
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "typescript": "^5.0.0"
+  },
   "engines": {
-    "node": ">=14.0.0"
+    "node": ">=18.0.0"
   }
 } 
